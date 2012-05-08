@@ -2,10 +2,6 @@
   (:use [floop.core])
   (:use [clojure.test]))
 
-(deftest should-split-input
-  (let [splitter (split-input "XXX0")]
-    (= (splitter "test inputXXX0") "test input")))
-
 (deftest should-return-sequence-containing-original-text
   (is (= (line-to-sequence "simple" "xxx") ["simple"])))
 
