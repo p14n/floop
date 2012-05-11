@@ -1,39 +1,28 @@
-(ns floop.core
- (:import
-  (java.util.regex Pattern)
-  (java.io PrintWriter BufferedReader)))
-(use '[clojure.contrib.server-socket :only (create-server close-server)])
-(use '[clojure.contrib.duck-streams :only (write-lines read-lines writer reader)])
-(use '[clojure.string :only (split blank?)])
+(ns floop.core)
+(use '[clojure.contrib.seq :only (positions)])
 
-(defn line-to-sequence
-  "Converts a string into a sequence, divided by the termination string.
-   The termination string is included at the end of the preceding token."
-  [line termination]
-  (let [index (.indexOf line termination)
-        term-length (.length termination)
-        term-end (+ index term-length)]
-  (if
-   (> index -1)
-    (cons
-     (subs line 0 term-end)
-     (seq
-      [(subs line term-end)]))
-    (seq [line]))))
+(defn buffered-token-reader
+  "Buffers an input stream, splitting by the provided token. Returns a lazy sequence of byte sequences."
+  [input token]
+  (let [bytes (byte-array 1024) read-token (fn this [previous]
+   (.read input bytes)
+    (let [combined (concat previous bytes)
+          token-index (index-of-seq-in-seq combined token)
+          end-token-index (+ token-index (count token))]
+     (if
+      (> token-index -1)
+       (cons
+        (take end-token-index combined)
+        (lazy-seq (this (drop end-token-index combined))))
+       (lazy-seq (this combined)))))]
+      (read-token (byte-array 0))))
 
-(defn read-lines-with-termination
-  "Buffers an input stream, splits the input by the termination pattern
-   and returns as a lazy sequence"
-  [input termination]
-  (let [read-line-with-previous (fn this [#^BufferedReader rdr previous]
-   (let [line (str previous (.readLine rdr))]
-    (println (str "line " line " prev " previous))
-    (if (blank? line)
-     (.close rdr)
-     (if (> (.indexOf line termination) -1)
-       (let [splitline (line-to-sequence line termination)]
-         (println splitline)
-         (lazy-seq
-          (cons (first splitline) (this rdr (second splitline)))))
-      (this rdr line)))))]
-    (read-line-with-previous (reader input) "")))
+(defn index-of-seq-in-seq
+  "Returns the index of one sequence within another"
+  [major minor]
+  (let [groups (partition (count minor) 1 major)
+        minorpositions (positions #{(seq minor)} groups)]
+   (if
+    (> (count minorpositions) 0)
+    (first minorpositions)
+    -1)))
