@@ -13,3 +13,9 @@
 (deftest should-find-index-of-bytes
   (is
    (= 3 (index-of-seq-in-seq (.getBytes "mybigsequence") (.getBytes "igse")))))
+
+(deftest should-find-one-recording-dataset
+  (is
+   (= 1 (count (get-recording-datasets [
+                                        {:name "hi" :recording true}
+                                        {:name "lo" :recording false}])))))

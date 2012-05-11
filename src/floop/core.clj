@@ -26,3 +26,22 @@
     (> (count minorpositions) 0)
     (first minorpositions)
     -1)))
+
+(defn record [msg datasets])
+
+(defn feed-and-record
+  "Takes an input and output, and records the traffic between the two"
+  [input output datasets token]
+  (let [recording (get-recording-datasets datasets)
+        record-and-feed (fn this [msg] (
+                           (if (> (count recording) 0)
+                            (record msg recording))
+                           (.write output (byte-array msg))))]
+        (doseq [message (buffered-token-reader input token)]
+          (record-and-feed message))))
+
+(defn get-recording-datasets
+  "Returns a sequence of datasets in the recording state"
+  [datasets]
+  (filter (fn [x] (x :recording)) datasets))
+                      
